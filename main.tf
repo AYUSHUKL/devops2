@@ -22,7 +22,7 @@ resource "aws_lambda_function" "addEmployeeProfile" {
   filename      = "node/add_employee_lambda.zip" # Updated path
   function_name = "addEmployeeProfile"
   handler       = "index.handler"
-  runtime       = "nodejs14.x"
+  runtime       = "nodejs16.x"
   role          = aws_iam_role.lambda_exec.arn
   
   environment {
@@ -37,7 +37,7 @@ resource "aws_lambda_function" "getEmployeeProfile" {
   filename      = "node/get_employee_lambda.zip" # Updated path
   function_name = "getEmployeeProfile"
   handler       = "index.handler"
-  runtime       = "nodejs14.x"
+  runtime       = "nodejs16.x"
   role          = aws_iam_role.lambda_exec.arn
   
   environment {
