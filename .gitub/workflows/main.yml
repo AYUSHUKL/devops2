@@ -1,16 +1,22 @@
-name: >- "Terraform action"
+nname: "Terraform action"
 on:
   push:
     branches:
       - main
   pull_request:
+    branches:
+      - main
+  workflow_dispatch: # Manually trigger the workflow
+
 permissions:
-      id-token: write # This is required for aws oidc connection
-      contents: read # This is required for actions/checkout
-      pull-requests: write # This is required for gh bot to comment PR
+  id-token: write
+  contents: read
+  pull-requests: write
+
 env:
   TF_LOG: INFO
   AWS_REGION: ${{ secrets.AWS_REGION }}
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -21,6 +27,8 @@ jobs:
     steps:
       - name: Git checkout
         uses: actions/checkout@v3
+
+      # Add the remaining steps here as per the existing workflow
 
       - name: Configure AWS credentials from AWS account
         uses: aws-actions/configure-aws-credentials@v1
