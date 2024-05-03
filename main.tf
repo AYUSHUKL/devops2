@@ -19,7 +19,7 @@ resource "aws_dynamodb_table" "employee_profile" {
 
 # Lambda function for adding an employee
 resource "aws_lambda_function" "addEmployeeProfile" {
-  filename      = "node/add_employee_lambda.zip" # Updated path
+  filename      = "add_employee_lambda.zip" # Updated path
   function_name = "addEmployeeProfile"
   handler       = "index.handler"
   runtime       = "nodejs14.x"
@@ -34,7 +34,7 @@ resource "aws_lambda_function" "addEmployeeProfile" {
 
 # Lambda function for getting an employee profile
 resource "aws_lambda_function" "getEmployeeProfile" {
-  filename      = "node/get_employee_lambda.zip" # Updated path
+  filename      = "get_employee_lambda.zip" # Updated path
   function_name = "getEmployeeProfile"
   handler       = "index.handler"
   runtime       = "nodejs14.x"
