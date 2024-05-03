@@ -34,8 +34,6 @@ resource "aws_api_gateway_resource" "get_employee_resource" {
   path_part   = "getEmployee"
 }
 
-# Add more resources and configurations as needed
-
 # Define API Gateway methods
 resource "aws_api_gateway_method" "add_employee_method" {
   rest_api_id   = aws_api_gateway_rest_api.employee_api.id
@@ -53,7 +51,9 @@ resource "aws_api_gateway_method" "get_employee_method" {
 
 # Define API Gateway deployment
 resource "aws_api_gateway_deployment" "employee_api_deployment" {
-  depends_on   = [aws_api_gateway_integration.add_employee_integration, aws_api_gateway_integration.get_employee_integration]
+  depends_on   = [aws_api_gateway_method.add_employee_method, aws_api_gateway_method.get_employee_method]
   rest_api_id  = aws_api_gateway_rest_api.employee_api.id
   stage_name   = "dev"
 }
+
+# Add more resources and configurations as needed
