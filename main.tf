@@ -34,7 +34,7 @@ resource "aws_lambda_function" "addEmployeeProfile" {
 
 # Lambda function for getting an employee profile
 resource "aws_lambda_function" "getEmployeeProfile" {
-  filename      = "&{path.modlue}/node/get_employee_lambda,js.zip" # Update with the path to your Lambda function code
+  filename      = "&{path.modlue}/node/get_employee_lambda.zip" # Update with the path to your Lambda function code
   function_name = "getEmployeeProfile"
   handler       = "index.handler"
   runtime       = "nodejs14.x" # Update with your runtime
