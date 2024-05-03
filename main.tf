@@ -1,7 +1,7 @@
 provider "aws" {
   region     = "us-east-1"
-  access_key = "AKIAZI2LDMNXXVZVYFY2"
-  secret_key = "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"
+  access_key = vars.AWS_ACCESS_KEY
+  secret_key = vars.AWS_SECRET_KEY
 }
 
 # DynamoDB table for employee profiles
