@@ -1,14 +1,7 @@
 provider "aws" {
-  region = "us-east-1"
+  region     = "us-east-1"
   access_key = "AKIAZI2LDMNXXVZVYFY2"
   secret_key = "lLINm2VF5caGBP6bAUzPShVnYtFYElBar837gQGk"
-}
-
-# Define AWS provider
-provider "aws" {
-  region = "us-east-1"
-  access_key = "YOUR_ACCESS_KEY"
-  secret_key = "YOUR_SECRET_KEY"
 }
 
 # DynamoDB table for employee profiles
@@ -26,33 +19,62 @@ resource "aws_dynamodb_table" "employee_profile" {
 
 # Lambda function for adding an employee
 resource "aws_lambda_function" "addEmployeeProfile" {
-  filename      = "devops2/add_employee_lambda.zip" # Path to your Lambda function code
   function_name = "addEmployeeProfile"
   handler       = "index.handler"
-  runtime       = "nodejs14.x" # Update with your runtime
+  runtime       = "nodejs14.x"
   role          = aws_iam_role.lambda_exec.arn
-  
-  environment {
-    variables = {
-      TABLE_NAME = aws_dynamodb_table.employee_profile.name
+  inline_code   = <<-EOT
+    'use strict';
+
+    var AWS = require('aws-sdk'),
+        mydocumentClient = new AWS.DynamoDB.DocumentClient(); 
+
+    exports.handler = function(event, context, callback){
+      var params = {
+        Item : {
+          "empId" :event.empId,
+          "empFirstName" : event.empFirstName,
+          "empLastName" : event.empLastName,
+          "empAge" : event.empAge
+        },
+        TableName : process.env.DYNAMODB_TABLE_NAME
+      };
+      mydocumentClient.put(params, function(err, data){
+        callback(err, data);
+      });
     }
-  }
+  EOT
 }
 
 # Lambda function for getting an employee profile
 resource "aws_lambda_function" "getEmployeeProfile" {
-  filename      = "devops2/get_employee_lambda.zip" # Path to your Lambda function code
   function_name = "getEmployeeProfile"
-  handler       = "index.getempprofile"
-  runtime       = "nodejs14.x" # Update with your runtime
+  handler       = "index.handler"
+  runtime       = "nodejs14.x"
   role          = aws_iam_role.lambda_exec.arn
-  
-  environment {
-    variables = {
-      TABLE_NAME = aws_dynamodb_table.employee_profile.name
+  inline_code   = <<-EOT
+    'use strict';
+
+    var AWS = require('aws-sdk'),
+        mydocumentClient = new AWS.DynamoDB.DocumentClient(); 
+
+    exports.handler = function(event, context, callback){
+      var params = {
+        TableName : process.env.DYNAMODB_TABLE_NAME
+      };
+      mydocumentClient.scan(params, function(err, data){
+        if(err){
+            callback(err, null);
+        }else{
+            callback(null, data.Items);
+        }
+      });
     }
-  }
+  EOT
 }
+
+# Rest of your existing Terraform code...
+
 
 # API Gateway REST API
 resource "aws_api_gateway_rest_api" "employee_api" {
@@ -88,5 +110,77 @@ resource "aws_api_gateway_integration" "get_employee_integration" {
   rest_api_id             = aws_api_gateway_rest_api.employee_api.id
   resource_id             = aws_api_gateway_resource.get_employee_resource.id
   http_method             = "GET"
-  integration_http_me
+  integration_http_method = "POST"
+  uri                     = aws_lambda_function.getEmployeeProfile.invoke_arn
+type                    = "AWS_PROXY"  # Add this line
+}
+
+# API Gateway method for addEmployeeProfile function
+resource "aws_api_gateway_method" "add_employee_method" {
+  rest_api_id   = aws_api_gateway_rest_api.employee_api.id
+  resource_id   = aws_api_gateway_resource.add_employee_resource.id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+# API Gateway method for getEmployeeProfile function
+resource "aws_api_gateway_method" "get_employee_method" {
+  rest_api_id   = aws_api_gateway_rest_api.employee_api.id
+  resource_id   = aws_api_gateway_resource.get_employee_resource.id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+# API Gateway deployment
+resource "aws_api_gateway_deployment" "employee_api_deployment" {
+  depends_on   = [aws_api_gateway_integration.add_employee_integration, aws_api_gateway_integration.get_employee_integration]
+  rest_api_id  = aws_api_gateway_rest_api.employee_api.id
+  stage_name   = "dev"
+}
+
+# IAM role for Lambda execution
+resource "aws_iam_role" "lambda_exec" {
+  name               = "lambda_exec_role"
+  assume_role_policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+        Action    = "sts:AssumeRole"
+      },
+    ]
+  })
+}
+
+# IAM policy for Lambda execution role
+resource "aws_iam_policy" "lambda_exec_policy" {
+  name        = "lambda_exec_policy"
+  description = "Policy for Lambda execution role"
+  
+  policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "dynamodb:PutItem"
+        Resource = aws_dynamodb_table.employee_profile.arn
+      },
+      {
+        Effect   = "Allow"
+        Action   = "dynamodb:GetItem"
+        Resource = aws_dynamodb_table.employee_profile.arn
+      },
+      # Add more permissions as needed
+    ]
+  })
+}
+
+# Attach policy to Lambda execution role
+resource "aws_iam_role_policy_attachment" "lambda_exec_policy_attachment" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = aws_iam_policy.lambda_exec_policy.arn
+}
 
