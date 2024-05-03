@@ -1,5 +1,5 @@
 provider "aws" {
-  region     = "us-east-1"
+  region = "us-east-1"
   access_key = "AKIAZI2LDMNXXVZVYFY2"
   secret_key = "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"
 }
@@ -19,62 +19,33 @@ resource "aws_dynamodb_table" "employee_profile" {
 
 # Lambda function for adding an employee
 resource "aws_lambda_function" "addEmployeeProfile" {
+  filename      = "${path.modue}/add_employee_lambda.zip" # Update with the path to your Lambda function code
   function_name = "addEmployeeProfile"
   handler       = "index.handler"
-  runtime       = "nodejs14.x"
+  runtime       = "nodejs14.x" # Update with your runtime
   role          = aws_iam_role.lambda_exec.arn
-  inline_code   = <<-EOT
-    'use strict';
-
-    var AWS = require('aws-sdk'),
-        mydocumentClient = new AWS.DynamoDB.DocumentClient(); 
-
-    exports.handler = function(event, context, callback){
-      var params = {
-        Item : {
-          "empId" :event.empId,
-          "empFirstName" : event.empFirstName,
-          "empLastName" : event.empLastName,
-          "empAge" : event.empAge
-        },
-        TableName : process.env.DYNAMODB_TABLE_NAME
-      };
-      mydocumentClient.put(params, function(err, data){
-        callback(err, data);
-      });
+  
+  environment {
+    variables = {
+      DYNAMODB_TABLE_NAME = aws_dynamodb_table.employee_profile.name
     }
-  EOT
+  }
 }
 
 # Lambda function for getting an employee profile
 resource "aws_lambda_function" "getEmployeeProfile" {
+  filename      = "${path.modue}/get_employee_lambda,js.zip" # Update with the path to your Lambda function code
   function_name = "getEmployeeProfile"
   handler       = "index.handler"
-  runtime       = "nodejs14.x"
+  runtime       = "nodejs14.x" # Update with your runtime
   role          = aws_iam_role.lambda_exec.arn
-  inline_code   = <<-EOT
-    'use strict';
-
-    var AWS = require('aws-sdk'),
-        mydocumentClient = new AWS.DynamoDB.DocumentClient(); 
-
-    exports.handler = function(event, context, callback){
-      var params = {
-        TableName : process.env.DYNAMODB_TABLE_NAME
-      };
-      mydocumentClient.scan(params, function(err, data){
-        if(err){
-            callback(err, null);
-        }else{
-            callback(null, data.Items);
-        }
-      });
+  
+  environment {
+    variables = {
+      DYNAMODB_TABLE_NAME = aws_dynamodb_table.employee_profile.name
     }
-  EOT
+  }
 }
-
-# Rest of your existing Terraform code...
-
 
 # API Gateway REST API
 resource "aws_api_gateway_rest_api" "employee_api" {
